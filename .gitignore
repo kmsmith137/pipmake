@@ -1,0 +1,5 @@
+*~
+*.pyc
+build/
+pipmake.egg-info/
+docs/_build/
