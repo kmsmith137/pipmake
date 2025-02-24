@@ -17,7 +17,8 @@ class Builder:
 
              self.name
              self.version
-             self.requires_python
+             self.requires_python  # e.g. '>= 3.8'
+             self.dependencies     # list of strings, e.g. ['numpy','scipy']
              self.wheel_tag        # 'py3-none-any'
              self.wheel_basename   # '{name}-{version}-{tag}.whl'
              self.wheel_filename   # '{outdir}/{wheel_basename}'
@@ -40,7 +41,7 @@ class Builder:
         with open(filename, 'rb') as f:
             data = tomllib.load(f)
 
-        fields = [ 'name', 'version', 'requires-python' ]
+        fields = [ 'name', 'version', 'requires-python', 'dependencies' ]
         
         if 'project' not in data:
             raise RuntimeError(f"{filename}: expected [project] header")
@@ -51,7 +52,10 @@ class Builder:
         self.name = data['project']['name']
         self.version = data['project']['version']
         self.requires_python = data['project']['requires-python']
+        self.dependencies = data['project']['dependencies']
         print(f'pipmake: name={self.name}, version={self.version}')
+        # print(f'pipmake: requires_python = "{self.requires_python}"')
+        # print(f'pipmake: dependencies = {self.dependencies}')
 
         # We don't "normalize" the name -- this just causes problems.
         # (Ref: https://packaging.python.org/en/latest/specifications/name-normalization/#name-normalization)
@@ -230,6 +234,10 @@ class Builder:
             print(f'Name: {self.name}', file=s)
             print(f'Version: {self.version}', file=s)
             print(f'Requires-Python: {self.requires_python}', file=s)
+
+            for d in self.dependencies:
+                print(f'Requires-Dist: {d}', file=s)
+            
             return s.getvalue()
 
 
