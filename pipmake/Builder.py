@@ -53,6 +53,7 @@ class Builder:
         self.version = data['project']['version']
         self.requires_python = data['project']['requires-python']
         self.dependencies = data['project']['dependencies']
+        self.scripts = data['project'].get('scripts', {})
         print(f'pipmake: name={self.name}, version={self.version}')
         # print(f'pipmake: requires_python = "{self.requires_python}"')
         # print(f'pipmake: dependencies = {self.dependencies}')
@@ -182,6 +183,11 @@ class Builder:
                 f'{dist_info_dir}/WHEEL': self._make_wheel_wheel(),
                 f'{dist_info_dir}/top_level.txt': (self.name + '\n')  # not sure if I need this
             }
+
+            # Add entry_points.txt if there are console scripts defined in [project.scripts]
+            entry_points = self._make_entry_points()
+            if entry_points:
+                metadata[f'{dist_info_dir}/entry_points.txt'] = entry_points
             
             record_filename = f'{dist_info_dir}/RECORD'
             all_filenames = primary_filenames + list(metadata.keys()) + [record_filename]
@@ -266,7 +272,24 @@ class Builder:
             for f in wheel_output_files:
                 print(f'{f},,', file=s)
             return s.getvalue()
-    
+
+
+    def _make_entry_points(self):
+        """Returns contents of '{name}-{version}.dist-info/entry_points.txt' for console scripts.
+        
+        Pip reads this file during installation and generates wrapper scripts in the bin directory.
+        Reference: https://packaging.python.org/en/latest/specifications/entry-points/
+        """
+        
+        if not self.scripts:
+            return None
+        
+        with io.StringIO() as s:
+            print('[console_scripts]', file=s)
+            for name, entry_point in self.scripts.items():
+                print(f'{name} = {entry_point}', file=s)
+            return s.getvalue()
+
         
     @staticmethod    
     def is_valid_name(name):
